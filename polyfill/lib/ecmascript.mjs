@@ -4952,7 +4952,6 @@ export function AddDurationToOrSubtractDurationFromPlainYearMonth(operation, yea
 
   const fieldNames = CalendarFields(calendarRec, ['monthCode', 'year']);
   const fields = PrepareTemporalFields(yearMonth, fieldNames, []);
-  const fieldsCopy = SnapshotOwnProperties(fields, null);
   fields.day = 1;
   let startDate = CalendarDateFromFields(calendarRec, fields);
   const Duration = GetIntrinsic('%Temporal.Duration%');
@@ -4969,14 +4968,7 @@ export function AddDurationToOrSubtractDurationFromPlainYearMonth(operation, yea
       -1,
       'constrain'
     );
-    const endOfMonth = CreateTemporalDate(
-      endOfMonthISO.year,
-      endOfMonthISO.month,
-      endOfMonthISO.day,
-      calendarRec.receiver
-    );
-    fieldsCopy.day = CalendarDay(calendarRec, endOfMonth);
-    startDate = CalendarDateFromFields(calendarRec, fieldsCopy);
+    startDate = CreateTemporalDate(endOfMonthISO.year, endOfMonthISO.month, endOfMonthISO.day, calendarRec.receiver);
   }
   const durationToAdd = new Duration(years, months, weeks, days, 0, 0, 0, 0, 0, 0);
   const optionsCopy = SnapshotOwnProperties(options, null);
