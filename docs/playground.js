@@ -11258,19 +11258,6 @@
 	  const isoDtStart = GetISODateTimeFor(timeZone, ns1);
 	  const isoDtEnd = GetISODateTimeFor(timeZone, ns2);
 
-	  // If year-month-day values are same-day,
-	  // there's no point involving the calendar/timezone for zdt->pdt conversions.
-	  // It also avoids a situation where dayCorrection backs up too far on same-day diffs
-	  // with reverse-direction wallclock delta due to DST:
-	  // https://github.com/tc39/proposal-temporal/issues/3141
-	  if (isoDtStart.isoDate.year === isoDtEnd.isoDate.year && isoDtStart.isoDate.month === isoDtEnd.isoDate.month && isoDtStart.isoDate.day === isoDtEnd.isoDate.day) {
-	    const timeDuration = new TimeDuration(nsDiff);
-	    return {
-	      date: ZeroDateDuration(),
-	      time: timeDuration
-	    };
-	  }
-
 	  // Simulate moving ns1 as many years/months/weeks/days as possible without
 	  // surpassing ns2. This value is stored in intermediateDateTime/intermediateInstant/intermediateNs.
 	  // We do not literally move years/months/weeks/days with calendar arithmetic,
