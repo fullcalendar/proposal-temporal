@@ -20,7 +20,6 @@ import {
   // class static functions and methods
   ArrayPrototypeEvery,
   ArrayPrototypeFilter,
-  ArrayPrototypeFlatMap,
   ArrayPrototypeIncludes,
   ArrayPrototypeIndexOf,
   ArrayPrototypeJoin,
@@ -214,23 +213,22 @@ export function RequireString(value) {
   return value;
 }
 
-// each item is [plural, singular, (length in ns)]
+// each item is [plural, singular]
 const TEMPORAL_UNITS = [
   ['years', 'year'],
   ['months', 'month'],
   ['weeks', 'week'],
-  ['days', 'day', NANOSECONDS_PER_DAY],
-  ['hours', 'hour', NANOSECONDS_PER_HOUR],
-  ['minutes', 'minute', NANOSECONDS_PER_MINUTE],
-  ['seconds', 'second', NANOSECONDS_PER_SECOND],
-  ['milliseconds', 'millisecond', NANOSECONDS_PER_MILLISECOND],
-  ['microseconds', 'microsecond', NANOSECONDS_PER_MICROSECOND],
-  ['nanoseconds', 'nanosecond', 1]
+  ['days', 'day'],
+  ['hours', 'hour'],
+  ['minutes', 'minute'],
+  ['seconds', 'second'],
+  ['milliseconds', 'millisecond'],
+  ['microseconds', 'microsecond'],
+  ['nanoseconds', 'nanosecond']
 ];
 const SINGULAR_FOR = new MapCtor(TEMPORAL_UNITS);
 // Iterable destructuring is acceptable in this first-run code.
 const UNITS_DESCENDING = Call(ArrayPrototypeMap, TEMPORAL_UNITS, [([, s]) => s]);
-const NS_PER_TIME_UNIT = new MapCtor(Call(ArrayPrototypeFlatMap, TEMPORAL_UNITS, [([, s, l]) => (l ? [[s, l]] : [])]));
 
 const DURATION_FIELDS = [
   'days',
@@ -1045,6 +1043,28 @@ export function IsDateUnit(unit) {
 
 export function IsTimeUnit(unit) {
   return !IsDateUnit(unit);
+}
+
+function TemporalUnitLength(unit) {
+  switch (unit) {
+    case 'day':
+      return NANOSECONDS_PER_DAY;
+    case 'hour':
+      return NANOSECONDS_PER_HOUR;
+    case 'minute':
+      return NANOSECONDS_PER_MINUTE;
+    case 'second':
+      return NANOSECONDS_PER_SECOND;
+    case 'millisecond':
+      return NANOSECONDS_PER_MILLISECOND;
+    case 'microsecond':
+      return NANOSECONDS_PER_MICROSECOND;
+    case 'nanosecond':
+      return 1;
+    /* c8 ignore next 2 */
+    default:
+      assertNotReached(`${unit} shouldn't be passed to TemporalUnitLength`);
+  }
 }
 
 function calendarImplForID(calendar) {
@@ -3521,7 +3541,7 @@ function NudgeToZonedTime(sign, duration, isoDateTime, timeZone, calendar, incre
 
   // Compute time parts of the duration to nanoseconds and round
   // Result could be negative
-  const unitIncrement = Call(MapPrototypeGet, NS_PER_TIME_UNIT, [unit]) * increment;
+  const unitIncrement = TemporalUnitLength(unit) * increment;
   let roundedTimeDuration = duration.time.round(unitIncrement, roundingMode);
 
   // Does the rounded time exceed the time-in-day?
@@ -3557,7 +3577,7 @@ function NudgeToDayOrTime(duration, destEpochNs, largestUnit, increment, smalles
 
   const timeDuration = duration.time.add24HourDays(duration.date.days);
   // Convert to nanoseconds and round
-  const unitLength = Call(MapPrototypeGet, NS_PER_TIME_UNIT, [smallestUnit]);
+  const unitLength = TemporalUnitLength(smallestUnit);
   const roundedTime = timeDuration.round(bigInt(increment).multiply(unitLength), roundingMode);
   const diffTime = roundedTime.subtract(timeDuration);
 
@@ -4336,7 +4356,7 @@ export function RoundNumberToIncrementAsIfPositive(quantity, increment, mode) {
 }
 
 export function RoundTemporalInstant(epochNs, increment, unit, roundingMode) {
-  const incrementNs = Call(MapPrototypeGet, NS_PER_TIME_UNIT, [unit]) * increment;
+  const incrementNs = TemporalUnitLength(unit) * increment;
   return RoundNumberToIncrementAsIfPositive(epochNs, incrementNs, roundingMode);
 }
 
@@ -4374,7 +4394,7 @@ export function RoundTime(
     case 'nanosecond':
       quantity += nanosecond;
   }
-  const nsPerUnit = Call(MapPrototypeGet, NS_PER_TIME_UNIT, [unit]);
+  const nsPerUnit = TemporalUnitLength(unit);
   const result = RoundNumberToIncrement(quantity, nsPerUnit * increment, roundingMode) / nsPerUnit;
   switch (unit) {
     case 'day':
@@ -4395,14 +4415,13 @@ export function RoundTime(
 }
 
 export function RoundTimeDuration(timeDuration, increment, unit, roundingMode) {
-  const divisor = Call(MapPrototypeGet, NS_PER_TIME_UNIT, [unit]);
+  const unitLength = TemporalUnitLength(unit);
   // Use bigInt multiplication to avoid exceeding MAX_SAFE_INTEGER
-  return timeDuration.round(bigInt(divisor).multiply(increment), roundingMode);
+  return timeDuration.round(bigInt(unitLength).multiply(increment), roundingMode);
 }
 
 export function TotalTimeDuration(timeDuration, unit) {
-  const divisor = Call(MapPrototypeGet, NS_PER_TIME_UNIT, [unit]);
-  return timeDuration.fdiv(divisor);
+  return timeDuration.fdiv(TemporalUnitLength(unit));
 }
 
 export function CompareISODate(isoDate1, isoDate2) {
