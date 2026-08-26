@@ -177,17 +177,22 @@ impl['iso8601'] = {
   extraFields() {
     return [];
   },
-  fieldKeysToIgnore(keys) {
+  fieldKeysToIgnore(fields) {
+    assert(fields.era === undefined, 'era is never read in iso8601 calendar');
+    assert(fields.eraYear === undefined, 'eraYear is never read in iso8601 calendar');
     const result = new SetCtor();
-    for (let ix = 0; ix < keys.length; ix++) {
-      const key = keys[ix];
-      Call(SetPrototypeAdd, result, [key]);
-      if (key === 'month') {
-        Call(SetPrototypeAdd, result, ['monthCode']);
-      } else if (key === 'monthCode') {
-        Call(SetPrototypeAdd, result, ['month']);
-      }
+    if (fields.year !== undefined) Call(SetPrototypeAdd, result, ['year']);
+    if (fields.month !== undefined || fields.monthCode !== undefined) {
+      Call(SetPrototypeAdd, result, ['month']);
+      Call(SetPrototypeAdd, result, ['monthCode']);
     }
+    if (fields.day !== undefined) Call(SetPrototypeAdd, result, ['day']);
+    if (fields.hour !== undefined) Call(SetPrototypeAdd, result, ['hour']);
+    if (fields.minute !== undefined) Call(SetPrototypeAdd, result, ['minute']);
+    if (fields.second !== undefined) Call(SetPrototypeAdd, result, ['second']);
+    if (fields.millisecond !== undefined) Call(SetPrototypeAdd, result, ['millisecond']);
+    if (fields.microsecond !== undefined) Call(SetPrototypeAdd, result, ['microsecond']);
+    if (fields.nanosecond !== undefined) Call(SetPrototypeAdd, result, ['nanosecond']);
     return arrayFromSet(result);
   },
   dateAdd({ year, month, day }, { years = 0, months = 0, weeks = 0, days = 0 }, overflow) {
@@ -2304,47 +2309,35 @@ const nonIsoGeneralImpl = {
     cache.setObject(result);
     return result;
   },
-  fieldKeysToIgnore(keys) {
+  fieldKeysToIgnore(fields) {
     const result = new SetCtor();
-    for (let ix = 0; ix < keys.length; ix++) {
-      const key = keys[ix];
-      Call(SetPrototypeAdd, result, [key]);
-      switch (key) {
-        case 'era':
-          Call(SetPrototypeAdd, result, ['eraYear']);
-          Call(SetPrototypeAdd, result, ['year']);
-          break;
-        case 'eraYear':
-          Call(SetPrototypeAdd, result, ['era']);
-          Call(SetPrototypeAdd, result, ['year']);
-          break;
-        case 'year':
-          Call(SetPrototypeAdd, result, ['era']);
-          Call(SetPrototypeAdd, result, ['eraYear']);
-          break;
-        case 'month':
-          Call(SetPrototypeAdd, result, ['monthCode']);
-          // See https://github.com/tc39/proposal-temporal/issues/1784
-          if (this.helper.erasBeginMidYear) {
-            Call(SetPrototypeAdd, result, ['era']);
-            Call(SetPrototypeAdd, result, ['eraYear']);
-          }
-          break;
-        case 'monthCode':
-          Call(SetPrototypeAdd, result, ['month']);
-          if (this.helper.erasBeginMidYear) {
-            Call(SetPrototypeAdd, result, ['era']);
-            Call(SetPrototypeAdd, result, ['eraYear']);
-          }
-          break;
-        case 'day':
-          if (this.helper.erasBeginMidYear) {
-            Call(SetPrototypeAdd, result, ['era']);
-            Call(SetPrototypeAdd, result, ['eraYear']);
-          }
-          break;
+    if (fields.era !== undefined || fields.eraYear !== undefined || fields.year !== undefined) {
+      Call(SetPrototypeAdd, result, ['era']);
+      Call(SetPrototypeAdd, result, ['eraYear']);
+      Call(SetPrototypeAdd, result, ['year']);
+    }
+    if (fields.month !== undefined || fields.monthCode !== undefined) {
+      Call(SetPrototypeAdd, result, ['month']);
+      Call(SetPrototypeAdd, result, ['monthCode']);
+      // See https://github.com/tc39/proposal-temporal/issues/1784
+      if (this.helper.erasBeginMidYear) {
+        Call(SetPrototypeAdd, result, ['era']);
+        Call(SetPrototypeAdd, result, ['eraYear']);
       }
     }
+    if (fields.day !== undefined) {
+      Call(SetPrototypeAdd, result, ['day']);
+      if (this.helper.erasBeginMidYear) {
+        Call(SetPrototypeAdd, result, ['era']);
+        Call(SetPrototypeAdd, result, ['eraYear']);
+      }
+    }
+    if (fields.hour !== undefined) Call(SetPrototypeAdd, result, ['hour']);
+    if (fields.minute !== undefined) Call(SetPrototypeAdd, result, ['minute']);
+    if (fields.second !== undefined) Call(SetPrototypeAdd, result, ['second']);
+    if (fields.millisecond !== undefined) Call(SetPrototypeAdd, result, ['millisecond']);
+    if (fields.microsecond !== undefined) Call(SetPrototypeAdd, result, ['microsecond']);
+    if (fields.nanosecond !== undefined) Call(SetPrototypeAdd, result, ['nanosecond']);
     return arrayFromSet(result);
   },
   dateAdd(isoDate, { years, months, weeks, days }, overflow) {
