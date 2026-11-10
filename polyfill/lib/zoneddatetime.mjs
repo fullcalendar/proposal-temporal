@@ -312,7 +312,7 @@ export class ZonedDateTime {
       const dayLengthNs = endNs.subtract(startNs);
       const dayProgressNs = TimeDuration.fromEpochNsDiff(startNs, thisNs);
       const roundedDayNs = dayProgressNs.round(dayLengthNs, roundingMode);
-      epochNanoseconds = roundedDayNs.addToEpochNs(startNs);
+      epochNanoseconds = ES.AddTimeDurationToEpochNanoseconds(startNs, roundedDayNs);
     } else {
       // smallestUnit < day
       // Round based on ISO-calendar time units

@@ -2940,11 +2940,14 @@ function AssertISODateTimeWithinLimits(isoDateTime) {
   );
 }
 
-// In the spec, IsWithinEpochNanosecondsInterval returns a boolean and call
-// sites are responsible for throwing. In the polyfill, ValidateEpochNanoseconds
-// takes its place so that we can DRY the throwing code.
+export function IsWithinEpochNanosecondsInterval(epochNanoseconds) {
+  return !(epochNanoseconds.lesser(NS_MIN) || epochNanoseconds.greater(NS_MAX));
+}
+
+// Polyfill-only convenience function replacing some call sites of
+// IsWithinEpochNanosecondsInterval so that we can DRY the throwing code.
 export function ValidateEpochNanoseconds(epochNanoseconds) {
-  if (epochNanoseconds.lesser(NS_MIN) || epochNanoseconds.greater(NS_MAX)) {
+  if (!IsWithinEpochNanosecondsInterval(epochNanoseconds)) {
     throw new RangeErrorCtor('date/time value is outside of supported range');
   }
 }
@@ -3530,6 +3533,9 @@ function NudgeToZonedTime(sign, duration, isoDateTime, timeZone, calendar, incre
     dayDelta = 0;
     nudgedEpochNs = roundedTimeDuration.addToEpochNs(startEpochNs);
   }
+  // nudgedEpochNs is within limits here for all current time zones, but could
+  // be out of range in a time zone that has a transition within 24h of the end
+  // of the range
 
   const dateDuration = AdjustDateDurationRecord(duration.date, duration.date.days + dayDelta);
   const resultDuration = CombineDateAndTimeDuration(dateDuration, roundedTimeDuration);
@@ -4134,7 +4140,7 @@ export function AddTime({ hour, minute, second, millisecond, microsecond, nanose
   );
 }
 
-export function AddInstant(epochNanoseconds, timeDuration) {
+export function AddTimeDurationToEpochNanoseconds(epochNanoseconds, timeDuration) {
   const result = timeDuration.addToEpochNs(epochNanoseconds);
   ValidateEpochNanoseconds(result);
   return result;
@@ -4149,7 +4155,9 @@ export function AddZonedDateTime(epochNs, timeZone, calendar, duration, overflow
   // not expected and so is avoided below via a fast path for time-only
   // arithmetic.
   // BTW, this behavior is similar in spirit to offset: 'prefer' in `with`.
-  if (DateDurationSign(duration.date) === 0) return AddInstant(epochNs, duration.time);
+  if (DateDurationSign(duration.date) === 0) {
+    return AddTimeDurationToEpochNanoseconds(epochNs, duration.time);
+  }
 
   // RFC 5545 requires the date portion to be added in calendar days and the
   // time portion to be added in exact time.
@@ -4160,7 +4168,7 @@ export function AddZonedDateTime(epochNs, timeZone, calendar, duration, overflow
   // Note that 'compatible' is used below because this disambiguation behavior
   // is required by RFC 5545.
   const intermediateNs = GetEpochNanosecondsFor(timeZone, dtIntermediate, 'compatible');
-  return AddInstant(intermediateNs, duration.time);
+  return AddTimeDurationToEpochNanoseconds(intermediateNs, duration.time);
 }
 
 export function AddDurations(operation, duration, other) {
@@ -4192,7 +4200,7 @@ export function AddDurationToInstant(operation, instant, durationLike) {
     );
   }
   const internalDuration = ToInternalDurationRecordWith24HourDays(duration);
-  const ns = AddInstant(GetSlot(instant, EPOCHNANOSECONDS), internalDuration.time);
+  const ns = AddTimeDurationToEpochNanoseconds(GetSlot(instant, EPOCHNANOSECONDS), internalDuration.time);
   const Instant = GetIntrinsic('%Temporal.Instant%');
   return new Instant(ns);
 }
