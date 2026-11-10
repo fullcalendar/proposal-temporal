@@ -1757,21 +1757,15 @@ export function CreateTemporalZonedDateTime(epochNanoseconds, timeZone, calendar
 export function CalendarMergeFields(calendar, fields, additionalFields) {
   const overriddenKeys = calendarImplForID(calendar).fieldKeysToIgnore(additionalFields);
   const merged = ObjectCreate(null);
-  if (fields.era !== undefined && !Call(ArrayPrototypeIncludes, overriddenKeys, ['era'])) {
-    merged.era = fields.era;
-  }
+  assert(fields.era === undefined, 'era is never set in the fields passed to CalendarMergeFields');
   if (additionalFields.era !== undefined) merged.era = additionalFields.era;
-  if (fields.eraYear !== undefined && !Call(ArrayPrototypeIncludes, overriddenKeys, ['eraYear'])) {
-    merged.eraYear = fields.eraYear;
-  }
+  assert(fields.eraYear === undefined, 'eraYear is never set in the fields passed to CalendarMergeFields');
   if (additionalFields.eraYear !== undefined) merged.eraYear = additionalFields.eraYear;
   if (fields.year !== undefined && !Call(ArrayPrototypeIncludes, overriddenKeys, ['year'])) {
     merged.year = fields.year;
   }
   if (additionalFields.year !== undefined) merged.year = additionalFields.year;
-  if (fields.month !== undefined && !Call(ArrayPrototypeIncludes, overriddenKeys, ['month'])) {
-    merged.month = fields.month;
-  }
+  assert(fields.month === undefined, 'month is never set in the fields passed to CalendarMergeFields');
   if (additionalFields.month !== undefined) merged.month = additionalFields.month;
   if (fields.monthCode !== undefined && !Call(ArrayPrototypeIncludes, overriddenKeys, ['monthCode'])) {
     merged.monthCode = fields.monthCode;
@@ -1809,10 +1803,8 @@ export function CalendarMergeFields(calendar, fields, additionalFields) {
     merged.offset = fields.offset;
   }
   if (additionalFields.offset !== undefined) merged.offset = additionalFields.offset;
-  if (fields.timeZone !== undefined && !Call(ArrayPrototypeIncludes, overriddenKeys, ['timeZone'])) {
-    merged.timeZone = fields.timeZone;
-  }
-  if (additionalFields.timeZone !== undefined) merged.timeZone = additionalFields.timeZone;
+  assert(fields.timeZone === undefined, 'timeZone is never set in the fields passed to CalendarMergeFields');
+  assert(additionalFields.timeZone === undefined, 'timeZone is never set in the additionalFields passed to CalendarMergeFields');
   return merged;
 }
 
